@@ -5,7 +5,8 @@ export type Phase0PossibleKind =
   | "task_candidate"
   | "assignment_candidate"
   | "announcement_candidate"
-  | "unknown";
+  | "unknown"
+  | "other";
 
 export type Phase0Confidence = "low" | "medium" | "high";
 
@@ -15,7 +16,9 @@ export type Phase0SuggestedNextStep =
   | "send_to_human_review"
   | "create_candidate_report"
   | "create_site_update_suggestion"
-  | "do_not_use_yet";
+  | "do_not_use_yet"
+  | "unverified"
+  | "other";
 
 export type Phase0MessyRecord = {
   id: string;
@@ -34,4 +37,18 @@ export type Phase0JudgementDraft = {
   suggestedNextStep: Phase0SuggestedNextStep;
   unsafeToActDirectly: boolean;
   humanReviewNote?: string;
+};
+
+export type Phase0Draft = {
+  messyRecordId: string;
+  possibleKind: Phase0PossibleKind;
+  possibleKindOther: string;
+  confidence: Phase0Confidence;
+  evidence: string;
+  blockers: string;
+  suggestedNextStep: Phase0SuggestedNextStep;
+  suggestedNextStepOther: string;
+  followUpNote: string;
+  unsafeToActDirectly: boolean;
+  humanReviewNote: string;
 };

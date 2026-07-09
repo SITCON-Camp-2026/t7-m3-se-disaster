@@ -245,6 +245,51 @@ button {
   margin-bottom: 8px;
 }
 
+.judgement-card label {
+  display: grid;
+  gap: 6px;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.judgement-card input,
+.judgement-card select,
+.judgement-card textarea {
+  width: 100%;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font: inherit;
+}
+
+.judgement-card textarea {
+  resize: vertical;
+  min-height: 78px;
+}
+
+.draft-toggle {
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.draft-toggle input {
+  width: auto;
+}
+
+.draft-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.draft-actions button {
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
 .judgement-card ul,
 .workbench__checklist ul {
   padding-left: 20px;

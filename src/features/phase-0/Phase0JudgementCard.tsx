@@ -8,6 +8,7 @@ const kindLabels: Record<Phase0JudgementDraft["possibleKind"], string> = {
   assignment_candidate: "人員指派候選",
   announcement_candidate: "公告候選",
   unknown: "候選類型待判斷",
+  other: "其他",
 };
 
 const confidenceLabels: Record<Phase0JudgementDraft["confidence"], string> = {
@@ -26,6 +27,8 @@ const nextStepLabels: Record<
   create_candidate_report: "建立候選通報",
   create_site_update_suggestion: "建立地點更新建議",
   do_not_use_yet: "暫時不要使用",
+  unverified: "未查核",
+  other: "其他",
 };
 
 export function Phase0JudgementCard({
@@ -39,15 +42,15 @@ export function Phase0JudgementCard({
     <article className="judgement-card">
       <div className="judgement-card__header">
         <div>
-          <p className="eyebrow">Starter 安全預設</p>
+          <p className="eyebrow">起始版本安全預設</p>
           <h3>尚未建立整理草稿</h3>
         </div>
         <StatusBadge status={record.verificationStatus} />
       </div>
 
       <p>
-        這張卡只保留保守的安全邊界，不是 agent 對這筆資料的整理答案。請讓 coding
-        agent 實作可建立、編輯與刪除的整理草稿。
+        這張卡只保留保守的安全邊界，不是 AI agent
+        對這筆資料的整理答案。請讓 AI agent 實作可建立、編輯與刪除的整理草稿。
       </p>
 
       <dl className="judgement-summary">

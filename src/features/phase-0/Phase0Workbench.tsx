@@ -1,8 +1,46 @@
+import { useMemo, useState } from "react";
 import { RecordCard } from "../../components/RecordCard";
 import { StatusBadge } from "../../components/StatusBadge";
 import { Phase0JudgementCard } from "./Phase0JudgementCard";
-import { createPhase0Judgement } from "./phase0-heuristics";
-import type { Phase0MessyRecord } from "./phase0-types";
+import {
+  createPhase0Draft,
+  createPhase0DraftForRecord,
+  createPhase0Judgement,
+  getDisplayStatusForNextStep,
+  getNextStepLabel,
+  shouldShowFollowUpNote,
+  shouldShowHumanReviewNote,
+  shouldShowKindOtherInput,
+  shouldShowNextStepOtherInput,
+} from "./phase0-heuristics";
+import type { Phase0Draft, Phase0MessyRecord } from "./phase0-types";
+
+const possibleKindOptions = [
+  { value: "help_request_candidate", label: "求助候選" },
+  { value: "site_status_candidate", label: "地點狀態候選" },
+  { value: "task_candidate", label: "任務候選" },
+  { value: "assignment_candidate", label: "人員指派候選" },
+  { value: "announcement_candidate", label: "公告候選" },
+  { value: "unknown", label: "候選類型待判斷" },
+  { value: "other", label: "其他" },
+] as const;
+
+const confidenceOptions = [
+  { value: "low", label: "低" },
+  { value: "medium", label: "中" },
+  { value: "high", label: "高" },
+] as const;
+
+const nextStepOptions = [
+  { value: "keep_raw", label: "先保留原始資訊" },
+  { value: "ask_for_more_info", label: "補問來源或現場資訊" },
+  { value: "send_to_human_review", label: "交給人工確認" },
+  { value: "create_candidate_report", label: "建立候選通報" },
+  { value: "create_site_update_suggestion", label: "建立地點更新建議" },
+  { value: "do_not_use_yet", label: "暫時不要使用" },
+  { value: "unverified", label: "未查核" },
+  { value: "other", label: "其他" },
+] as const;
 
 export function Phase0Workbench({
   records,
@@ -16,6 +54,49 @@ export function Phase0Workbench({
   const selectedRecord =
     records.find((record) => record.id === selectedRecordId) ?? records[0];
   const safetyBoundary = createPhase0Judgement(selectedRecord);
+  const [drafts, setDrafts] = useState<Record<string, Phase0Draft>>({});
+
+  const draft = useMemo(() => {
+    if (!selectedRecord) {
+      return createPhase0Draft("");
+    }
+
+    return (
+      drafts[selectedRecord.id] ??
+      createPhase0DraftForRecord(selectedRecord)
+    );
+  }, [drafts, selectedRecord]);
+
+  const showHumanReviewNote = shouldShowHumanReviewNote(
+    draft.suggestedNextStep,
+  );
+  const showFollowUpNote = shouldShowFollowUpNote(draft.suggestedNextStep);
+  const showKindOtherInput = shouldShowKindOtherInput(draft.possibleKind);
+  const showNextStepOtherInput = shouldShowNextStepOtherInput(
+    draft.suggestedNextStep,
+  );
+  const displayStatus = getDisplayStatusForNextStep(
+    draft.suggestedNextStep,
+    selectedRecord.verificationStatus,
+  );
+  const nextStepLabel = getNextStepLabel(draft.suggestedNextStep);
+
+  function updateDraft(field: keyof Phase0Draft, value: string | boolean) {
+    setDrafts((current) => ({
+      ...current,
+      [selectedRecord.id]: {
+        ...(current[selectedRecord.id] ?? createPhase0Draft(selectedRecord.id)),
+        [field]: value,
+      },
+    }));
+  }
+
+  function resetDraft() {
+    setDrafts((current) => ({
+      ...current,
+      [selectedRecord.id]: createPhase0Draft(selectedRecord.id),
+    }));
+  }
 
   return (
     <div className="workbench">
@@ -45,6 +126,149 @@ export function Phase0Workbench({
 
         <div className="workbench__main">
           <RecordCard record={selectedRecord} />
+
+          <section className="judgement-card">
+            <div className="judgement-card__header">
+              <div>
+                <p className="eyebrow">整理草稿</p>
+                <h3>為這筆原始資訊建立草稿</h3>
+              </div>
+              <StatusBadge status={displayStatus} />
+              <span className="status-badge status-neutral">{nextStepLabel}</span>
+            </div>
+
+            <p>
+              這份草稿是給學員在工作台中手動填寫的簡化版本，目的是把原始資訊與候選判斷分開看。
+            </p>
+
+            <label>
+              這筆看起來像什麼
+              <select
+                value={draft.possibleKind}
+                onChange={(event) =>
+                  updateDraft("possibleKind", event.target.value)
+                }
+              >
+                {possibleKindOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {showKindOtherInput ? (
+              <label>
+                其他說明
+                <input
+                  value={draft.possibleKindOther}
+                  onChange={(event) =>
+                    updateDraft("possibleKindOther", event.target.value)
+                  }
+                  placeholder="請簡短說明"
+                />
+              </label>
+            ) : null}
+
+            <label>
+              信心程度
+              <select
+                value={draft.confidence}
+                onChange={(event) =>
+                  updateDraft("confidence", event.target.value)
+                }
+              >
+                {confidenceOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              證據
+              <textarea
+                value={draft.evidence}
+                onChange={(event) => updateDraft("evidence", event.target.value)}
+                rows={2}
+                placeholder="簡短寫下關鍵線索"
+              />
+            </label>
+
+            <label>
+              卡住點
+              <textarea
+                value={draft.blockers}
+                onChange={(event) => updateDraft("blockers", event.target.value)}
+                rows={2}
+                placeholder="例如：地點不明"
+              />
+            </label>
+
+            <label>
+              建議下一步
+              <select
+                value={draft.suggestedNextStep}
+                onChange={(event) =>
+                  updateDraft("suggestedNextStep", event.target.value)
+                }
+              >
+                {nextStepOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            {showNextStepOtherInput ? (
+              <label>
+                其他說明
+                <input
+                  value={draft.suggestedNextStepOther}
+                  onChange={(event) =>
+                    updateDraft("suggestedNextStepOther", event.target.value)
+                  }
+                  placeholder="請簡短說明"
+                />
+              </label>
+            ) : null}
+
+            {showFollowUpNote ? (
+              <label>
+                補問備註
+                <textarea
+                  value={draft.followUpNote}
+                  onChange={(event) =>
+                    updateDraft("followUpNote", event.target.value)
+                  }
+                  rows={2}
+                  placeholder="需要補什麼訊息"
+                />
+              </label>
+            ) : null}
+
+            {showHumanReviewNote ? (
+              <label>
+                確認備註
+                <textarea
+                  value={draft.humanReviewNote}
+                  onChange={(event) =>
+                    updateDraft("humanReviewNote", event.target.value)
+                  }
+                  rows={2}
+                  placeholder="誰需要確認"
+                />
+              </label>
+            ) : null}
+
+            <div className="draft-actions">
+              <button type="button" onClick={resetDraft}>
+                重設草稿
+              </button>
+            </div>
+          </section>
 
           <Phase0JudgementCard
             judgement={safetyBoundary}
